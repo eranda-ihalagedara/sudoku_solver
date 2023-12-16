@@ -1,7 +1,23 @@
 import numpy as np
 
 
-def solve_sudoku(puzzle_orig, level=1):
+def solve_sudoku(puzzle_orig: np.ndarray , level=1) -> (np.ndarray, int):
+    """
+    Solves a Sudoku puzzle using a backtracking algorithm  and elimination of candidates.
+
+    Parameters:
+    - puzzle_orig: numpy.ndarray
+        The initial Sudoku puzzle as a 9x9 numpy array.
+    - level: int, optional, default:1
+        The difficulty level of the puzzle (default is 1).
+
+    Returns:
+    - numpy.ndarray:
+        The solved Sudoku puzzle.
+    - int:
+        The number of remaining cells.
+    """
+    
     print('\n'+(level-1)*'\t'+f'Level {level}:')
     puzzle = puzzle_orig.copy()
     remaining_cells = np.sum(puzzle==0)
@@ -11,6 +27,7 @@ def solve_sudoku(puzzle_orig, level=1):
 
     print('\t'*level+'Iterations:',end=' ')
     
+    # Get candidates for each unfilled cell, fill ones with only one possibility iterate 
     while not return_puzzle:
         if remaining_cells == 0:
             return_puzzle=True
@@ -40,8 +57,8 @@ def solve_sudoku(puzzle_orig, level=1):
             else:
                 return_puzzle = True
 
+    # Fill a vacant cell and pass into recursive function if puzzle not filled in iterations
     if remaining_cells > 0:
-        # Fill first vacant cell and pass into resursive function
         candidates = get_candidate_list(puzzle)
         i,j = get_branching_position(candidates)
 
@@ -56,7 +73,6 @@ def solve_sudoku(puzzle_orig, level=1):
                     remaining_cells = 0
                     break
             
-
     if remaining_cells == 0:
         if level==1:
             print('\nPuzzle solved')
@@ -65,18 +81,41 @@ def solve_sudoku(puzzle_orig, level=1):
     return puzzle, remaining_cells
 
     
-def get_candidate_list(puzzle):
+def get_candidate_list(puzzle: np.ndarray) -> np.ndarray:
+    """
+    Generates a candidate list for each empty cell in the Sudoku puzzle.
+
+    Parameters:
+    - puzzle: numpy.ndarray
+        The Sudoku puzzle as a 9x9 numpy array.
+
+    Returns:
+    - numpy.ndarray:
+        A 9x9 numpy array each element containing a list of the candidates for each empty cell.
+    """
+        
     candidates = np.empty((9,9), dtype=object)
     numbers = set(range(1,10))
+
     for i in range(9):
         for j in range(9):
             if puzzle[i,j] == 0:
                 candidates[i,j] = list(numbers - set(puzzle[i,:]) - set(puzzle[:,j]) - set(puzzle[(i//3)*3 : (i//3)*3+3,(j//3)*3 : (j//3)*3+3].flatten()))
-    # print(candidates[0,1], candidates[0,0], puzzle[0,0], puzzle[0,1])
     return candidates
 
 
-def fill_candidates(puzzle, candidates):
+def fill_candidates(puzzle: np.ndarray, candidates: np.ndarray) -> np.ndarray:
+    """
+    Fills the empty cell the Sudoku puzzle if there is only one candidate/possible value.
+
+    Parameters:
+    - puzzle (numpy.ndarray): The Sudoku puzzle as a 9x9 numpy array.
+    - candidates (numpy.ndarray): A 9x9 numpy array, each element containing a list of the candidates for each empty cell.
+
+    Returns:
+    - numpy.ndarray: Updated puzzle after filling in candidates.
+    """
+
     filled_puzzle = puzzle.copy()
     for i in range(9):
         for j in range(9): 
@@ -86,7 +125,19 @@ def fill_candidates(puzzle, candidates):
     return filled_puzzle
 
 
-def refine_candidates(candidates):
+def refine_candidates(candidates: np.ndarray) -> np.ndarray:
+    """
+    Refines the candidate list for each empty cell by eliminating candidates based on the other candidates in relevant row, column and block.
+
+    Parameters:
+    - candidates: numpy.ndarray
+        A 9x9 numpy array, each element containing a list of the candidates for each empty cell.
+
+    Returns:
+    - numpy.ndarray:
+        Refined candidate list after eliminating invalid candidates.
+    """
+
     refined_candidates = candidates.copy()
     for i in range(9):
         for j in range(9):
@@ -113,7 +164,22 @@ def refine_candidates(candidates):
     return refined_candidates
 
 
-def get_row_candidates(candidates, i, j):
+def get_row_candidates(candidates: np.ndarray, i, j) -> list:
+    """
+    Gets the list of all the other candidates in the row index-i except for the candidates in row index-i and column index-j.
+
+    Parameters:
+    - candidates: numpy.ndarray
+        A 9x9 numpy array, each element containing a list of the candidates for each empty cell.
+    - i: int
+        Row index.
+    - j: int
+        Column index.
+
+    Returns:
+    - list: The list of all the other candidates in the row index-i.
+    """
+
     row = []
     for k in range(9):
         if k == j:
@@ -123,7 +189,22 @@ def get_row_candidates(candidates, i, j):
     return row
 
 
-def get_col_candidates(candidates, i, j):
+def get_col_candidates(candidates: np.ndarray, i, j) -> list:
+    """
+    Gets the list of all the other candidates in the column index-j except for the candidates in row index-i and column index-j.
+
+    Parameters:
+    - candidates: numpy.ndarray
+        A 9x9 numpy array, each element containing a list of the candidates for each empty cell.
+    - i: int
+        Row index.
+    - j: int
+        Column index.
+
+    Returns:
+    - list: The list of all the other candidates in the column index-j.
+    """
+
     col = []
     for k in range(9):
         if k == i:
@@ -133,7 +214,22 @@ def get_col_candidates(candidates, i, j):
     return col
 
 
-def get_block_candidates(candidates, i, j):
+def get_block_candidates(candidates: np.ndarray, i, j) -> list:
+    """
+    Gets the list of all the other candidates in the relevant 3x3 block except for the candidates in row index-i and column index-j.
+
+    Parameters:
+    - candidates: numpy.ndarray
+        A 9x9 numpy array, each element containing a list of the candidates for each empty cell.
+    - i: int
+        Row index.
+    - j: int
+        Column index.
+
+    Returns:
+    - list: The list of all the other candidates in the relevant block cell i,j belongs to.
+    """
+
     block = []
     i1, i2, j1, j2 = (i//3)*3, (i//3)*3+3, (j//3)*3, (j//3)*3+3
     
@@ -146,7 +242,18 @@ def get_block_candidates(candidates, i, j):
     return block
 
 
-def get_branching_position(candidates):
+def get_branching_position(candidates: np.ndarray) -> (int, int):
+    """
+    Finds the position (row, column) with the minimum number of candidates for branching.
+
+    Parameters:
+    - candidates: numpy.ndarray
+        A 9x9 numpy array, each element containing a list of the candidates for each empty cell.
+
+    Returns:
+    - tuple: The row and column indices of the first cell with the minimum candidates.
+    """
+
     i,j = 0,0
     position_found = False
 
@@ -163,12 +270,4 @@ def get_branching_position(candidates):
             
     return i,j
 
-
-def count_occurances(element, selection):
-    count = 0
-    # Loop through the array and check for elements
-    for item in selection:
-      if item is not None and item == element:
-        count += 1
-    return count
 
