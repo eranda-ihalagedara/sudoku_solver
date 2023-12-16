@@ -33,6 +33,20 @@ import sudoku as sk
 solved_puzzle, remaining_cells = sk.solve_sudoku(puzzle)
 ```
 It returns a tuple containing the solved puzzle and remaining cells to be filled. If a puzzle is solved. `remaining_cells` would be 0.  
+There will be an output to the console that indicates level of recursion and iterations in each level.  
+```
+Level 1:
+	Iterations: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 
+	Level 2:
+		Iterations: 1 2 
+		Level 3:
+			Iterations: 1 
+			Level 4:
+				Iterations: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 
+Puzzle solved
+```
+
+
 
 ## References
 
