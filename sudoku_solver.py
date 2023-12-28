@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def solve_sudoku(puzzle_orig: np.ndarray , level=1) -> (np.ndarray, int):
+def solve_sudoku(puzzle_orig: np.ndarray , level=1, verbose = True) -> (np.ndarray, int):
     """
     Solves a Sudoku puzzle using a backtracking algorithm  and elimination of candidates.
 
@@ -9,7 +9,9 @@ def solve_sudoku(puzzle_orig: np.ndarray , level=1) -> (np.ndarray, int):
     - puzzle_orig: numpy.ndarray
         The initial Sudoku puzzle as a 9x9 numpy array.
     - level: int, optional, default:1
-        The difficulty level of the puzzle (default is 1).
+        The backtracking level of the puzzle (default is 1).
+    - verbose: bool, optional, default: True
+        Whether to print backtracking levels and iteration details
 
     Returns:
     - numpy.ndarray:
@@ -18,22 +20,24 @@ def solve_sudoku(puzzle_orig: np.ndarray , level=1) -> (np.ndarray, int):
         The number of remaining cells.
     """
     
-    print('\n'+(level-1)*'\t'+f'Level {level}:')
+    
     puzzle = puzzle_orig.copy()
     remaining_cells = np.sum(puzzle==0)
     solved_cells = 0
     return_puzzle = False
     iteration = 1
 
-    print('\t'*level+'Iterations:',end=' ')
+    if verbose:
+        print('\n'+(level-1)*'\t'+f'Level {level}:')
+        print('\t'*level+'Iterations:',end=' ')
     
     # Get candidates for each unfilled cell, fill ones with only one possibility iterate 
     while not return_puzzle:
         if remaining_cells == 0:
             return_puzzle=True
             break
-
-        print(iteration, end=' ')
+        if verbose:
+            print(iteration, end=' ')
         iteration+=1
             
         candidates = get_candidate_list(puzzle)
@@ -42,7 +46,6 @@ def solve_sudoku(puzzle_orig: np.ndarray , level=1) -> (np.ndarray, int):
 
         if solved_cells > 0:
             remaining_cells -= solved_cells 
-            # print('Candidate fill')
 
         else:
             candidates = refine_candidates(candidates)
@@ -52,7 +55,6 @@ def solve_sudoku(puzzle_orig: np.ndarray , level=1) -> (np.ndarray, int):
 
             if solved_cells > 0:
                 remaining_cells -= solved_cells 
-                # print('Refined candidates')
 
             else:
                 return_puzzle = True
@@ -66,7 +68,7 @@ def solve_sudoku(puzzle_orig: np.ndarray , level=1) -> (np.ndarray, int):
             for candidate in candidates[i,j]:                   
                 puzzle_copy = puzzle.copy()
                 puzzle_copy[i,j] = candidate
-                puzzle_reduced, reduced_cells = solve_sudoku(puzzle_copy, level+1)
+                puzzle_reduced, reduced_cells = solve_sudoku(puzzle_copy, level+1, verbose)
                 
                 if reduced_cells == 0:
                     puzzle = puzzle_reduced
@@ -76,7 +78,7 @@ def solve_sudoku(puzzle_orig: np.ndarray , level=1) -> (np.ndarray, int):
     if remaining_cells == 0:
         if level==1:
             print('\nPuzzle solved')
-    else:
+    elif verbose:
         print('Dead end')
     return puzzle, remaining_cells
 
@@ -142,7 +144,6 @@ def refine_candidates(candidates: np.ndarray) -> np.ndarray:
     for i in range(9):
         for j in range(9):
             if candidates[i,j] is not None and len(candidates[i,j])>1:
-                # print(i,j)
                 row_candidates = get_row_candidates(candidates, i, j)
                 col_candidates = get_col_candidates(candidates, i, j)
                 block_candidates = get_block_candidates(candidates, i, j)
