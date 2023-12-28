@@ -28,7 +28,7 @@ puzzle = np.array([
 Import the module and use `.solve_sudoku(puzzle)` to initiate solving.
 
 ```
-import sudoku as sk  
+import sudoku_solver as sk  
 
 solved_puzzle, remaining_cells = sk.solve_sudoku(puzzle)
 ```
