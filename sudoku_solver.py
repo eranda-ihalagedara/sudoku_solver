@@ -74,12 +74,12 @@ def solve_sudoku(puzzle_orig: np.ndarray , level=1, verbose = True) -> (np.ndarr
                     puzzle = puzzle_reduced
                     remaining_cells = 0
                     break
-            
-    if remaining_cells == 0:
-        if level==1:
-            print('\nPuzzle solved')
-    elif verbose:
-        print('Dead end')
+    if verbose: 
+        if remaining_cells == 0:
+            if level==1:
+                print('\nPuzzle solved')
+        else:
+            print('Dead end')
     return puzzle, remaining_cells
 
     
