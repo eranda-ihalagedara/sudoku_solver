@@ -46,8 +46,17 @@ Level 1:
 Puzzle solved
 ```
 
+### Puzzle Extractor
+You can use puzzle extractor to load an image of a sudoku puzzle and extract it into a numpy array
 
+```
+import puzzle_extractor as pe
+puzzle = pe.extract_puzzle('img/puzzle2.PNG')
+```
+**Note**: This uses opencv and pytesseract to process the image. Hence need to install libraries in the `requirements.txt` file. Depending on the image condition extracted puzzle may not be accurate. In that case you may need to  edit the `numpy` array.
 
 ## References
 
-1. The example puzzle was generated using [sudoku.com](https://sudoku.com)
+1. [sudoku.com](https://sudoku.com)
+2. StackOverflow. How to convert a Sudoku image with numbers to an array in python. [Answer](https://stackoverflow.com/a/68140587)
+3. StackOverflow. How to get the cells of a sudoku grid with OpenCV? [Answer](https://stackoverflow.com/a/60392130)
