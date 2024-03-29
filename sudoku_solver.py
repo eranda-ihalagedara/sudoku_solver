@@ -255,20 +255,15 @@ def get_branching_position(candidates: np.ndarray) -> (int, int):
     - tuple: The row and column indices of the first cell with the minimum candidates.
     """
 
-    i,j = 0,0
-    position_found = False
+    ib,jb = 0,0
+    num_candidates = 9
 
-    for num_candidates in range(2,9):
-        for i in range(9):
-            for j in range(9):
-                if candidates[i,j] is not None and len(candidates[i,j])==num_candidates:
-                    position_found = True
-                    break
-            if position_found:
-                break
-        if position_found:
-                break
-            
-    return i,j
+    for i in range(9):
+        for j in range(9):
+            if candidates[i,j] is not None and len(candidates[i,j])<num_candidates:
+                ib, jb = i,j
+                num_candidates = len(candidates[i,j])
+        
+    return ib,jb
 
 
