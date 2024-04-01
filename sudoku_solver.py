@@ -83,7 +83,7 @@ def solve_sudoku(puzzle_orig: np.ndarray , level=1, verbose = True) -> (np.ndarr
     return puzzle, remaining_cells
 
     
-def get_candidate_list(puzzle: np.ndarray) -> np.ndarray:
+def get_candidate_list(puzzle: np.ndarray, candidates_pre=None, r=None, c=None) -> np.ndarray:
     """
     Generates a candidate list for each empty cell in the Sudoku puzzle.
 
@@ -95,14 +95,35 @@ def get_candidate_list(puzzle: np.ndarray) -> np.ndarray:
     - numpy.ndarray:
         A 9x9 numpy array each element containing a list of the candidates for each empty cell.
     """
-        
-    candidates = np.empty((9,9), dtype=object)
-    numbers = set(range(1,10))
 
-    for i in range(9):
+    numbers = {1,2,3,4,5,6,7,8,9}
+    
+    if candidates_pre is not None:
+        candidates = candidates_pre.copy()
+        col_set = set(puzzle[:,c])
+        row_set = set(puzzle[r,:])
+        
+        for i in range(9):
+            if puzzle[i,c] == 0:
+                candidates[i,c] = list(numbers - set(puzzle[i,:]) - col_set - set(puzzle[(i//3)*3 : (i//3)*3+3, (c//3)*3 : (c//3)*3+3].flatten()))
+
         for j in range(9):
-            if puzzle[i,j] == 0:
-                candidates[i,j] = list(numbers - set(puzzle[i,:]) - set(puzzle[:,j]) - set(puzzle[(i//3)*3 : (i//3)*3+3,(j//3)*3 : (j//3)*3+3].flatten()))
+            if puzzle[r,j] == 0:
+                candidates[r,j] = list(numbers - row_set - set(puzzle[:,j]) - set(puzzle[(r//3)*3 : (r//3)*3+3, (j//3)*3 : (j//3)*3+3].flatten()))
+
+        for i in range((r//3)*3, (r//3)*3+3):
+            for j in range((c//3)*3, (c//3)*3+3):
+                if i == r or j == c or puzzle[i,j] > 0:
+                    continue
+                candidates[i,j] = list(numbers - set(puzzle[i,:]) - set(puzzle[:,j]) - set(puzzle[(i//3)*3 : (i//3)*3+3, (j//3)*3 : (j//3)*3+3].flatten()))
+        
+    else:
+        candidates = np.empty((9,9), dtype=object)
+        
+        for i in range(9):
+            for j in range(9):
+                if puzzle[i,j] == 0:
+                    candidates[i,j] = list(numbers - set(puzzle[i,:]) - set(puzzle[:,j]) - set(puzzle[(i//3)*3 : (i//3)*3+3,(j//3)*3 : (j//3)*3+3].flatten()))
     return candidates
 
 
