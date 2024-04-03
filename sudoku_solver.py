@@ -83,7 +83,7 @@ def solve_sudoku(puzzle_orig: np.ndarray , level=1, verbose = True) -> (np.ndarr
     return puzzle, remaining_cells
 
     
-def get_candidate_list(puzzle: np.ndarray, candidates_pre=None, r=None, c=None) -> np.ndarray:
+def get_candidate_list(puzzle: np.ndarray) -> np.ndarray:
     """
     Generates a candidate list for each empty cell in the Sudoku puzzle.
 
@@ -97,36 +97,39 @@ def get_candidate_list(puzzle: np.ndarray, candidates_pre=None, r=None, c=None) 
     """
 
     numbers = {1,2,3,4,5,6,7,8,9}
+    candidates = np.empty((9,9), dtype=object)
     
-    if candidates_pre is not None:
-        candidates = candidates_pre.copy()
-        col_set = set(puzzle[:,c])
-        row_set = set(puzzle[r,:])
-        
-        for i in range(9):
-            if puzzle[i,c] == 0:
-                candidates[i,c] = list(numbers - set(puzzle[i,:]) - col_set - set(puzzle[(i//3)*3 : (i//3)*3+3, (c//3)*3 : (c//3)*3+3].flatten()))
-
+    for i in range(9):
         for j in range(9):
-            if puzzle[r,j] == 0:
-                candidates[r,j] = list(numbers - row_set - set(puzzle[:,j]) - set(puzzle[(r//3)*3 : (r//3)*3+3, (j//3)*3 : (j//3)*3+3].flatten()))
-
-        for i in range((r//3)*3, (r//3)*3+3):
-            for j in range((c//3)*3, (c//3)*3+3):
-                if i == r or j == c or puzzle[i,j] > 0:
-                    continue
-                candidates[i,j] = list(numbers - set(puzzle[i,:]) - set(puzzle[:,j]) - set(puzzle[(i//3)*3 : (i//3)*3+3, (j//3)*3 : (j//3)*3+3].flatten()))
-        
-    else:
-        candidates = np.empty((9,9), dtype=object)
-        
-        for i in range(9):
-            for j in range(9):
-                if puzzle[i,j] == 0:
-                    candidates[i,j] = list(numbers - set(puzzle[i,:]) - set(puzzle[:,j]) - set(puzzle[(i//3)*3 : (i//3)*3+3,(j//3)*3 : (j//3)*3+3].flatten()))
+            if puzzle[i,j] == 0:
+                candidates[i,j] = list(numbers - set(puzzle[i,:]) - set(puzzle[:,j]) - set(puzzle[(i//3)*3 : (i//3)*3+3,(j//3)*3 : (j//3)*3+3].flatten()))
+                    
     return candidates
 
 
+def update_candidate_list(puzzle: np.ndarray, candidates=None, r=None, c=None):
+    numbers = {1,2,3,4,5,6,7,8,9}
+    col_set = set(puzzle[:,c])
+    row_set = set(puzzle[r,:])
+    filled_set = {candidates[r,c][0]}
+    
+    for i in range(9):
+        if puzzle[i,c] == 0:
+            candidates[i,c] = list(numbers - set(puzzle[i,:]) - col_set - set(puzzle[(i//3)*3 : (i//3)*3+3, (c//3)*3 : (c//3)*3+3].flatten()))
+
+    for j in range(9):
+        if puzzle[r,j] == 0:
+            candidates[r,j] = list(numbers - row_set - set(puzzle[:,j]) - set(puzzle[(r//3)*3 : (r//3)*3+3, (j//3)*3 : (j//3)*3+3].flatten()))
+
+    for i in range((r//3)*3, (r//3)*3+3):
+        for j in range((c//3)*3, (c//3)*3+3):
+            if i == r or j == c or puzzle[i,j] > 0:
+                continue
+            candidates[i,j] = list(numbers - set(puzzle[i,:]) - set(puzzle[:,j]) - set(puzzle[(i//3)*3 : (i//3)*3+3, (j//3)*3 : (j//3)*3+3].flatten()))
+
+    return candidates
+
+    
 def fill_candidates(puzzle: np.ndarray, candidates: np.ndarray) -> np.ndarray:
     """
     Fills the empty cell the Sudoku puzzle if there is only one candidate/possible value.
@@ -144,7 +147,7 @@ def fill_candidates(puzzle: np.ndarray, candidates: np.ndarray) -> np.ndarray:
         for j in range(9): 
             if candidates[i,j] is not None and len(candidates[i,j])==1:
                 filled_puzzle[i,j] = candidates[i,j][0]
-                candidates = get_candidate_list(filled_puzzle)
+                candidates = update_candidate_list(filled_puzzle, candidates, i, j)
     return filled_puzzle
 
 
