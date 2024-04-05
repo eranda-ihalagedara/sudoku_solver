@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def solve_sudoku(puzzle_orig: np.ndarray , level=1, verbose = True) -> (np.ndarray, int):
+def solve_sudoku(puzzle: np.ndarray , level=1, verbose = True) -> (np.ndarray, int):
     """
     Solves a Sudoku puzzle using a backtracking algorithm  and elimination of candidates.
 
@@ -20,48 +20,35 @@ def solve_sudoku(puzzle_orig: np.ndarray , level=1, verbose = True) -> (np.ndarr
         The number of remaining cells.
     """
     
-    
-    puzzle = puzzle_orig.copy()
     remaining_cells = np.sum(puzzle==0)
     solved_cells = 0
     return_puzzle = False
     iteration = 1
-
+    candidates = get_candidate_list(puzzle)
+    
     if verbose:
         print('\n'+(level-1)*'\t'+f'Level {level}:')
         print('\t'*level+'Iterations:',end=' ')
     
     # Get candidates for each unfilled cell, fill ones with only one possibility iterate 
-    while not return_puzzle:
-        if remaining_cells == 0:
-            return_puzzle=True
-            break
-        if verbose:
-            print(iteration, end=' ')
+    while True:
+        if remaining_cells == 0: break
+        
+        if verbose: print(iteration, end=' ')
         iteration+=1
-            
-        candidates = get_candidate_list(puzzle)
-        puzzle = fill_candidates(puzzle, candidates)
-        solved_cells = remaining_cells-np.sum(puzzle==0)
+        
+        puzzle, remaining_cells_new, candidates = fill_candidates(puzzle, candidates, remaining_cells)
+        solved_cells = remaining_cells-remaining_cells_new
+        remaining_cells = remaining_cells_new
 
-        if solved_cells > 0:
-            remaining_cells -= solved_cells 
-
-        else:
-            candidates = refine_candidates(candidates)
-            puzzle = fill_candidates(puzzle, candidates)
-
-            solved_cells = remaining_cells-np.sum(puzzle==0)
-
-            if solved_cells > 0:
-                remaining_cells -= solved_cells 
-
-            else:
-                return_puzzle = True
+        if solved_cells == 0:
+            candidates, is_refined = refine_candidates(candidates)
+            if not is_refined: break
+                
 
     # Fill a vacant cell and pass into recursive function if puzzle not filled in iterations
     if remaining_cells > 0:
-        candidates = get_candidate_list(puzzle)
+        
         i,j = get_branching_position(candidates)
 
         if candidates[i,j] is not None and len(candidates[i,j])>1:
@@ -79,7 +66,8 @@ def solve_sudoku(puzzle_orig: np.ndarray , level=1, verbose = True) -> (np.ndarr
             if level==1:
                 print('\nPuzzle solved')
         else:
-            print('Dead end')
+            print('\n'+(level-1)*'\t'+'Dead end')
+
     return puzzle, remaining_cells
 
     
@@ -107,30 +95,28 @@ def get_candidate_list(puzzle: np.ndarray) -> np.ndarray:
     return candidates
 
 
-def update_candidate_list(puzzle: np.ndarray, candidates=None, r=None, c=None):
-    numbers = {1,2,3,4,5,6,7,8,9}
-    col_set = set(puzzle[:,c])
-    row_set = set(puzzle[r,:])
-    filled_set = {candidates[r,c][0]}
+def update_candidate_list(puzzle, candidates, r, c):
+
+    filled_set = {puzzle[r,c]}
     
     for i in range(9):
         if puzzle[i,c] == 0:
-            candidates[i,c] = list(numbers - set(puzzle[i,:]) - col_set - set(puzzle[(i//3)*3 : (i//3)*3+3, (c//3)*3 : (c//3)*3+3].flatten()))
-
+            candidates[i,c] = list(set(candidates[i,c]) - filled_set)
+            
     for j in range(9):
         if puzzle[r,j] == 0:
-            candidates[r,j] = list(numbers - row_set - set(puzzle[:,j]) - set(puzzle[(r//3)*3 : (r//3)*3+3, (j//3)*3 : (j//3)*3+3].flatten()))
-
+            candidates[r,j] = list(set(candidates[r,j]) - filled_set)
+            
     for i in range((r//3)*3, (r//3)*3+3):
         for j in range((c//3)*3, (c//3)*3+3):
             if i == r or j == c or puzzle[i,j] > 0:
                 continue
-            candidates[i,j] = list(numbers - set(puzzle[i,:]) - set(puzzle[:,j]) - set(puzzle[(i//3)*3 : (i//3)*3+3, (j//3)*3 : (j//3)*3+3].flatten()))
-
+            candidates[i,j] = list(set(candidates[i,j]) - filled_set)
+            
     return candidates
 
     
-def fill_candidates(puzzle: np.ndarray, candidates: np.ndarray) -> np.ndarray:
+def fill_candidates(puzzle: np.ndarray, candidates: np.ndarray, remaining_cells):
     """
     Fills the empty cell the Sudoku puzzle if there is only one candidate/possible value.
 
@@ -146,9 +132,11 @@ def fill_candidates(puzzle: np.ndarray, candidates: np.ndarray) -> np.ndarray:
     for i in range(9):
         for j in range(9): 
             if candidates[i,j] is not None and len(candidates[i,j])==1:
-                filled_puzzle[i,j] = candidates[i,j][0]
+                filled_puzzle[i,j] = candidates[i,j].pop()
+                remaining_cells-=1
                 candidates = update_candidate_list(filled_puzzle, candidates, i, j)
-    return filled_puzzle
+                
+    return filled_puzzle, remaining_cells, candidates
 
 
 def refine_candidates(candidates: np.ndarray) -> np.ndarray:
@@ -165,6 +153,7 @@ def refine_candidates(candidates: np.ndarray) -> np.ndarray:
     """
 
     refined_candidates = candidates.copy()
+    is_refined = False
     for i in range(9):
         for j in range(9):
             if candidates[i,j] is not None and len(candidates[i,j])>1:
@@ -179,14 +168,18 @@ def refine_candidates(candidates: np.ndarray) -> np.ndarray:
                 
                 if len(row_cleaned_list) == 1:
                     refined_candidates[i,j] = row_cleaned_list
+                    is_refined = True
                 elif len(col_cleaned_list) == 1:
                     refined_candidates[i,j] = col_cleaned_list
+                    is_refined = True
                 elif len(block_cleaned_list) == 1:
                     refined_candidates[i,j] = block_cleaned_list
+                    is_refined = True
                 elif len(all_cleaned_list) == 1:
                     refined_candidates[i,j] = all_cleaned_list
+                    is_refined = True
 
-    return refined_candidates
+    return refined_candidates, is_refined
 
 
 def get_row_candidates(candidates: np.ndarray, i, j) -> list:
@@ -284,9 +277,11 @@ def get_branching_position(candidates: np.ndarray) -> (int, int):
 
     for i in range(9):
         for j in range(9):
-            if candidates[i,j] is not None and len(candidates[i,j])<num_candidates:
-                ib, jb = i,j
+            if candidates[i,j] is not None and 1 < len(candidates[i,j])<num_candidates:
+                ib,jb = i,j
                 num_candidates = len(candidates[i,j])
+                if num_candidates == 2:
+                    return ib,jb
         
     return ib,jb
 
