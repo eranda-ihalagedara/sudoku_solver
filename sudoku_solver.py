@@ -1,5 +1,8 @@
 import copy
 
+# List of numbers (1,2,3,4,5,6,7,8,9) that can fit into a cell in bitwise representation
+NUMS = {1, 2, 4, 8, 16, 32, 64, 128, 256}
+
 def solve(puzzle, verbose=True):
     puzzle = int_to_bitwise(puzzle)
     solved_puzzle, rcells = solve_sudoku(puzzle, 1, verbose)
@@ -9,7 +12,7 @@ def solve(puzzle, verbose=True):
 
     return bitwise_to_int(solved_puzzle)
 
-    
+# Convert puzzle values to bitwise representation
 def int_to_bitwise(puzzle):
 
     for i in range(9):
@@ -18,7 +21,7 @@ def int_to_bitwise(puzzle):
                 puzzle[i][j] = 2**(puzzle[i][j]-1)
     return puzzle
 
-    
+# Convert bitwise representation back to puzzle values
 def bitwise_to_int(puzzle):
     bit_map = {4:3, 8:4, 16:5, 32:6, 64:7, 128:8, 256:9}
     for i in range(9):
@@ -28,8 +31,7 @@ def bitwise_to_int(puzzle):
     return puzzle
 
 
-    
-def solve_sudoku(puzzle, level=1, verbose = True):
+def solve_sudoku(puzzle, level=1, verbose = True, candidates=None, remaining_cells=None):
     """
     Solves a Sudoku puzzle using a backtracking algorithm  and elimination of candidates.
 
@@ -47,30 +49,36 @@ def solve_sudoku(puzzle, level=1, verbose = True):
     - int:
         The number of remaining cells.
     """
-
-    remaining_cells = sum([1 for row in puzzle for x in row if x == 0])
+    
     solved_cells = 0
-    candidates = get_candidates(puzzle)
-
     iteration = 1
     
     if verbose:
         print('\n'+(level-1)*'\t'+f'Level {level}:')
         print('\t'*level+'Iterations:',end=' ')
     
-    # Get candidates for each unfilled cell, fill ones with only one possibility iterate 
+    # Get candidates for each unfilled cell
+    if not candidates:
+        candidates = get_candidates(puzzle)
+
+    if not remaining_cells:
+        remaining_cells = sum([1 for row in puzzle for x in row if x == 0])
+    
+    # Fill ones with only one candidate and iterate 
     while True:
         if remaining_cells == 0: break
         
         if verbose: print(iteration, end=' ')
         iteration+=1
         
-        puzzle, remaining_cells_new, candidates = fill_candidates(puzzle, candidates, remaining_cells)
+        valid, remaining_cells_new = fill_candidates(puzzle, candidates, remaining_cells)
+        if not valid:
+            return puzzle, remaining_cells_new
         solved_cells = remaining_cells-remaining_cells_new
         remaining_cells = remaining_cells_new
 
         if solved_cells == 0:
-            if not refine_candidates(candidates): 
+            if not find_hidden_singles(candidates): 
                 break
                 
 
@@ -83,17 +91,21 @@ def solve_sudoku(puzzle, level=1, verbose = True):
             candidate = candidates[i][j]
             
             for k in range(9):
-                if candidate % 2:
+                if candidate & 2**k > 0:
                     puzzle_copy = copy.deepcopy(puzzle)
-                    puzzle_copy[i][j] = 2**k
-                    puzzle_reduced, reduced_cells = solve_sudoku(puzzle_copy, level+1, verbose)
+                    candidates_copy = copy.deepcopy(candidates)
+                    puzzle_copy[i][j] = 2**k                    
+                    candidates_copy[i][j] = 0
+                    update_candidate_list(puzzle_copy, candidates_copy, i, j)
+                    
+                    puzzle_reduced, reduced_cells = solve_sudoku(puzzle = puzzle_copy,
+                                                                 level=level+1, verbose=verbose,
+                                                                 candidates=candidates_copy,
+                                                                 remaining_cells=remaining_cells-1)
                     
                     if reduced_cells == 0:
-                        puzzle = puzzle_reduced
-                        remaining_cells = 0
-                        break
-                    
-                candidate >>= 1
+                        return puzzle_reduced, 0
+
                 
     if verbose: 
         if remaining_cells == 0:
@@ -137,10 +149,43 @@ def get_candidates(puzzle):
                 
     return candidates
 
+    
+def fill_candidates(puzzle, candidates, remaining_cells):
+    """
+    Fills the empty cell the Sudoku puzzle if there is only one candidate/possible value.
+
+    Parameters:
+    - puzzle: The Sudoku puzzle as a 9x9 list with bitwise representation.
+    - candidates: A 9x9 list, each element containing a list of the candidates for each empty cell.
+
+    Returns:
+    - numpy.ndarray: Updated puzzle after filling in candidates.
+    """
+    
+    for i in range(9):
+        for j in range(9):
+            if puzzle[i][j] | candidates[i][j] > 0: # If a blank puzzle cell has candidates
+                if candidates[i][j] in NUMS:
+                    puzzle[i][j] = candidates[i][j]
+                    candidates[i][j] = 0
+                    remaining_cells-=1
+                    candidates = update_candidate_list(puzzle, candidates, i, j)
+            else: 
+                return False, remaining_cells    # If a blank puzzle cell has no candidates
+    
+    return True, remaining_cells
+
 
 def update_candidate_list(puzzle, candidates, r, c):
+    """
+    Update the candidates when a cell is filled
 
-    filled_val = puzzle[r][c]^0b111111111
+    Parameters:
+    -puzzle
+    -candidates
+    -r,c: row , column of filled value
+    """
+    filled_val = 0b111111111-puzzle[r][c]
     
     for k in range(9):
         if puzzle[k][c] == 0: candidates[k][c] &= filled_val
@@ -154,68 +199,44 @@ def update_candidate_list(puzzle, candidates, r, c):
     return candidates
 
     
-def fill_candidates(puzzle, candidates, remaining_cells):
+def find_hidden_singles(candidates) -> bool:
     """
-    Fills the empty cell the Sudoku puzzle if there is only one candidate/possible value.
+    Find hidden singles for each empty cell by eliminating candidates based on the other candidates in relevant row, column and block.
 
     Parameters:
-    - puzzle (numpy.ndarray): The Sudoku puzzle as a 9x9 numpy array.
-    - candidates (numpy.ndarray): A 9x9 numpy array, each element containing a list of the candidates for each empty cell.
+    - candidates: A 9x9 list, each element containing a list of the candidates for each empty cell.
 
     Returns:
-    - numpy.ndarray: Updated puzzle after filling in candidates.
-    """
-
-    nums = {1, 2, 4, 8, 16, 32, 64, 128, 256}
-    
-    for i in range(9):
-        for j in range(9): 
-            if candidates[i][j] in nums:
-                puzzle[i][j] = candidates[i][j]
-                candidates[i][j] = 0
-                remaining_cells-=1
-                candidates = update_candidate_list(puzzle, candidates, i, j)
-                
-    return puzzle, remaining_cells, candidates
-
-
-def refine_candidates(candidates) -> bool:
-    """
-    Refines the candidate list for each empty cell by eliminating candidates based on the other candidates in relevant row, column and block.
-
-    Parameters:
-    - candidates: numpy.ndarray
-        A 9x9 numpy array, each element containing a list of the candidates for each empty cell.
-
-    Returns:
-    - numpy.ndarray:
-        Refined candidate list after eliminating invalid candidates.
+    - bool: If a hidden single found or not.
     """
     nums = {1, 2, 4, 8, 16, 32, 64, 128, 256}
     
-    is_refined = False
+    hs_availabe = False
+    
     for i in range(9):
         for j in range(9):
             if candidates[i][j] > 1:
                 row_candidates = get_row_candidates(candidates, i, j)
-                col_candidates = get_col_candidates(candidates, i, j)
-                block_candidates = get_block_candidates(candidates, i, j)
-                
-                row_cleaned_list = candidates[i][j] & (row_candidates^0b111111111)
-                col_cleaned_list = candidates[i][j] & (col_candidates^0b111111111)
-                block_cleaned_list = candidates[i][j] & (block_candidates^0b111111111)
-
+                row_cleaned_list = candidates[i][j] & (0b111111111-row_candidates)
                 if row_cleaned_list in nums:
                     candidates[i][j] = row_cleaned_list
-                    is_refined = True
-                elif col_cleaned_list in nums:
+                    hs_availabe = True
+                    continue
+                
+                col_candidates = get_col_candidates(candidates, i, j)
+                col_cleaned_list = candidates[i][j] & (0b111111111-col_candidates)
+                if col_cleaned_list in nums:
                     candidates[i][j] = col_cleaned_list
-                    is_refined = True
-                elif block_cleaned_list in nums:
+                    hs_availabe = True
+                    continue
+                
+                block_candidates = get_block_candidates(candidates, i, j)
+                block_cleaned_list = candidates[i][j] & (0b111111111-block_candidates)
+                if block_cleaned_list in nums:
                     candidates[i][j] = block_cleaned_list
-                    is_refined = True
+                    hs_availabe = True
 
-    return is_refined
+    return hs_availabe
 
 
 def get_row_candidates(candidates, i, j) -> list:
