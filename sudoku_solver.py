@@ -1,9 +1,30 @@
 import copy
 
 # List of numbers (1,2,3,4,5,6,7,8,9) that can fit into a cell in bitwise representation
+# 1 - 000000001
+# 2 - 000000010
+# 3 - 000000100
+# 4 - 000001000
+# 5 - 000010000
+# 6 - 000100000
+# 7 - 001000000
+# 8 - 010000000
+# 9 - 100000000
 NUMS = {1, 2, 4, 8, 16, 32, 64, 128, 256}
 
 def solve(puzzle, verbose=True):
+    """
+    Parameters:
+    - puzzle:
+        The initial Sudoku puzzle as a 9x9 list with each item represent a value. 0:blank cell, 1-9: a clue.
+    - verbose: bool, optional, default: True
+        Whether to print backtracking levels and iteration details    
+
+    Returns: tuple, None
+    - tuple: (list, int)
+        (The solved Sudoku puzzle, The number of remaining cells)
+    - None: if no solution is found
+    """
     puzzle = int_to_bitwise(puzzle)
     solved_puzzle, rcells = solve_sudoku(puzzle, 1, verbose)
     if rcells > 0:
@@ -12,17 +33,39 @@ def solve(puzzle, verbose=True):
 
     return bitwise_to_int(solved_puzzle)
 
-# Convert puzzle values to bitwise representation
-def int_to_bitwise(puzzle):
 
+def int_to_bitwise(puzzle):
+    """
+    Convert puzzle values to bitwise representation
+    
+    Parameters:
+    - puzzle:
+        Sudoku puzzle as a 9x9 list with each item represent a value. 0:blank cell, 1-9: a clue.
+    
+    Returns:
+    - list:
+        Puzzle in bitwise representation
+    """
+    
     for i in range(9):
         for j in range(9):
             if puzzle[i][j]>2:
                 puzzle[i][j] = 2**(puzzle[i][j]-1)
     return puzzle
 
-# Convert bitwise representation back to puzzle values
+
 def bitwise_to_int(puzzle):
+    """
+    Convert puzzle in bitwise representation back to puzzle values
+    
+    Parameters:
+    - puzzle:
+        Puzzle in bitwise representation
+        
+    Returns:
+    - list:
+        Puzzle in int representation
+    """
     bit_map = {4:3, 8:4, 16:5, 32:6, 64:7, 128:8, 256:9}
     for i in range(9):
         for j in range(9):
@@ -33,18 +76,22 @@ def bitwise_to_int(puzzle):
 
 def solve_sudoku(puzzle, level=1, verbose = True, candidates=None, remaining_cells=None):
     """
-    Solves a Sudoku puzzle using a backtracking algorithm  and elimination of candidates.
+    Solves a Sudoku puzzle using hidden singles and backtracking.
 
     Parameters:
-    - puzzle_orig: numpy.ndarray
-        The initial Sudoku puzzle as a 9x9 numpy array.
+    - puzzle:
+        Sudoku puzzle as a 9x9 list with bitwise representation.
     - level: int, optional, default:1
         The backtracking level of the puzzle (default is 1).
     - verbose: bool, optional, default: True
         Whether to print backtracking levels and iteration details
-
+    - candidates: list, optional, default:None
+        9x9 list each element cotaining the candidates to empty cells of the puzzle
+    - remaining_cells: int
+        Empty cells of the puzzle
+    
     Returns:
-    - numpy.ndarray:
+    - list:
         The solved Sudoku puzzle.
     - int:
         The number of remaining cells.
@@ -64,7 +111,7 @@ def solve_sudoku(puzzle, level=1, verbose = True, candidates=None, remaining_cel
     if not remaining_cells:
         remaining_cells = sum([1 for row in puzzle for x in row if x == 0])
     
-    # Fill ones with only one candidate and iterate 
+    # Fill cells with only one candidate(naked singles), find hidden singles and iterate 
     while True:
         if remaining_cells == 0: break
         
@@ -82,12 +129,13 @@ def solve_sudoku(puzzle, level=1, verbose = True, candidates=None, remaining_cel
                 break
                 
 
-    # Fill a vacant cell and pass into recursive function if puzzle not filled in iterations
+    # Fill an empy cell with available candidates and pass into recursive function if no more naked singles or hidden singles
     if remaining_cells > 0:
-        
+
+        # Get an empty cell with minimum number of candidates
         i,j = get_branching_position(candidates)
 
-        if int.bit_count(candidates[i][j])>1 and puzzle[i][j] == 0:
+        if puzzle[i][j] == 0:
             candidate = candidates[i][j]
             
             for k in range(9):
@@ -99,13 +147,13 @@ def solve_sudoku(puzzle, level=1, verbose = True, candidates=None, remaining_cel
                     update_candidate_list(puzzle_copy, candidates_copy, i, j)
                     
                     puzzle_reduced, reduced_cells = solve_sudoku(puzzle = puzzle_copy,
-                                                                 level=level+1, verbose=verbose,
+                                                                 level=level+1,
+                                                                 verbose=verbose,
                                                                  candidates=candidates_copy,
                                                                  remaining_cells=remaining_cells-1)
                     
                     if reduced_cells == 0:
                         return puzzle_reduced, 0
-
                 
     if verbose: 
         if remaining_cells == 0:
@@ -122,15 +170,19 @@ def get_candidates(puzzle):
     Generates a candidate list for each empty cell in the Sudoku puzzle.
 
     Parameters:
-    - puzzle: numpy.ndarray
-        The Sudoku puzzle as a 9x9 numpy array.
+    - puzzle: list
+        The Sudoku puzzle as a 9x9 list in bitwise representation.
 
     Returns:
-    - numpy.ndarray:
-        A 9x9 numpy array each element containing a list of the candidates for each empty cell.
+    - list:
+        A 9x9 list each element containing a candidates for each empty cell in bitwise representation.
     """
-
-    candidates = [[0b111111111]*9 for _ in range(9)]
+    # n-th position from left represent n is a possible candidate if the bit value is 1
+    # 0b100101101 - possible candidates [1,3,4,6,9]
+    # 0b111111111 all candidates 1-9
+    # 0b111111111 = 511
+    
+    candidates = [[511]*9 for _ in range(9)]
     
     for i in range(9):
         for j in range(9):
@@ -152,14 +204,16 @@ def get_candidates(puzzle):
     
 def fill_candidates(puzzle, candidates, remaining_cells):
     """
-    Fills the empty cell the Sudoku puzzle if there is only one candidate/possible value.
+    Fills the empty cell the Sudoku puzzle if there is only one candidate(naked single).
 
     Parameters:
-    - puzzle: The Sudoku puzzle as a 9x9 list with bitwise representation.
-    - candidates: A 9x9 list, each element containing a list of the candidates for each empty cell.
+    - puzzle: The Sudoku puzzle as a 9x9 list in bitwise representation.
+    - candidates: A 9x9 list, each element containing the candidates for each empty cell.
 
     Returns:
-    - numpy.ndarray: Updated puzzle after filling in candidates.
+    - tuple: (bool, int) 
+        - bool: if the puzzle is valid
+        - int: remaining number of empty cells
     """
     
     for i in range(9):
@@ -181,20 +235,21 @@ def update_candidate_list(puzzle, candidates, r, c):
     Update the candidates when a cell is filled
 
     Parameters:
-    -puzzle
-    -candidates
+    - puzzle: The Sudoku puzzle as a 9x9 list in bitwise representation.
+    - candidates: A 9x9 list, each element containing the candidates for each empty cell.
+        
     -r,c: row , column of filled value
     """
-    filled_val = 0b111111111-puzzle[r][c]
+    filled_val_inverse = 511-puzzle[r][c]
     
     for k in range(9):
-        if puzzle[k][c] == 0: candidates[k][c] &= filled_val
-        if puzzle[r][k] == 0: candidates[r][k] &= filled_val
+        if puzzle[k][c] == 0: candidates[k][c] &= filled_val_inverse
+        if puzzle[r][k] == 0: candidates[r][k] &= filled_val_inverse
             
     for i in range((r//3)*3, (r//3)*3+3):
         for j in range((c//3)*3, (c//3)*3+3):
             if i == r or j == c or puzzle[i][j] > 0: continue
-            candidates[i][j] &= filled_val
+            candidates[i][j] &= filled_val_inverse
             
     return candidates
 
@@ -217,21 +272,21 @@ def find_hidden_singles(candidates) -> bool:
         for j in range(9):
             if candidates[i][j] > 1:
                 row_candidates = get_row_candidates(candidates, i, j)
-                row_cleaned_list = candidates[i][j] & (0b111111111-row_candidates)
+                row_cleaned_list = candidates[i][j] & (511-row_candidates)
                 if row_cleaned_list in nums:
                     candidates[i][j] = row_cleaned_list
                     hs_availabe = True
                     continue
                 
                 col_candidates = get_col_candidates(candidates, i, j)
-                col_cleaned_list = candidates[i][j] & (0b111111111-col_candidates)
+                col_cleaned_list = candidates[i][j] & (511-col_candidates)
                 if col_cleaned_list in nums:
                     candidates[i][j] = col_cleaned_list
                     hs_availabe = True
                     continue
                 
                 block_candidates = get_block_candidates(candidates, i, j)
-                block_cleaned_list = candidates[i][j] & (0b111111111-block_candidates)
+                block_cleaned_list = candidates[i][j] & (511-block_candidates)
                 if block_cleaned_list in nums:
                     candidates[i][j] = block_cleaned_list
                     hs_availabe = True
@@ -239,28 +294,25 @@ def find_hidden_singles(candidates) -> bool:
     return hs_availabe
 
 
-def get_row_candidates(candidates, i, j) -> list:
+def get_row_candidates(candidates, i, j):
     """
     Gets the list of all the other candidates in the row index-i except for the candidates in row index-i and column index-j.
 
     Parameters:
     - candidates: numpy.ndarray
         A 9x9 numpy array, each element containing a list of the candidates for each empty cell.
-    - i: int
-        Row index.
-    - j: int
-        Column index.
+    - i,j : row index, column indices.
 
     Returns:
-    - list: The list of all the other candidates in the row index-i.
+    - int: All the other candidates in the row index-i in bitwise representation
     """
 
-    row = 0
+    row_candidates = 0
     for k in range(9):
         if k == j: continue
-        row |= candidates[i][k]
+        row_candidates |= candidates[i][k]
 
-    return row
+    return row_candidates
 
 
 def get_col_candidates(candidates, i, j) -> list:
@@ -269,51 +321,45 @@ def get_col_candidates(candidates, i, j) -> list:
 
     Parameters:
     - candidates: numpy.ndarray
-        A 9x9 numpy array, each element containing a list of the candidates for each empty cell.
-    - i: int
-        Row index.
-    - j: int
-        Column index.
+        A 9x9 numpy array, each element containing  the candidates for each empty cell.
+    - i,j : row index, column indices.
 
     Returns:
-    - list: The list of all the other candidates in the column index-j.
+    - int: All the other candidates in the column index-j in bitwise representation
     """
 
-    col = 0
+    col_candidates = 0
     for k in range(9):
         if k == i: continue
-        col |= candidates[k][j]
+        col_candidates |= candidates[k][j]
         
-    return col
+    return col_candidates
 
 
-def get_block_candidates(candidates, i, j) -> list:
+def get_block_candidates(candidates, i, j):
     """
     Gets the list of all the other candidates in the relevant 3x3 block except for the candidates in row index-i and column index-j.
 
     Parameters:
     - candidates: numpy.ndarray
-        A 9x9 numpy array, each element containing a list of the candidates for each empty cell.
-    - i: int
-        Row index.
-    - j: int
-        Column index.
+        A 9x9 numpy array, each element containing  the candidates for each empty cell.
+    - i,j : row index, column indices.
 
     Returns:
-    - list: The list of all the other candidates in the relevant block cell i,j belongs to.
+    - int: All the other candidates in the relevant block cell i,j belongs to.
     """
 
-    block = 0
-    i1, i2, j1, j2 = (i//3)*3, (i//3)*3+3, (j//3)*3, (j//3)*3+3
-    for k in range(i1,i2):
-        for l in range(j1,j2):
+    block_candidates = 0
+    block_i, block_j = (i//3)*3, (j//3)*3
+    for k in range(block_i, block_i+3):
+        for l in range(block_j, block_j+3):
             if k == i and l == j: continue
-            block |= candidates[k][l]
+            block_candidates |= candidates[k][l]
             
-    return block
+    return block_candidates
 
 
-def get_branching_position(candidates) -> (int, int):
+def get_branching_position(candidates):
     """
     Finds the position (row, column) with the minimum number of candidates for branching.
 
