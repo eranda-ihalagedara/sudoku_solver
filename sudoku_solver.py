@@ -27,10 +27,12 @@ def solve(puzzle, verbose=True):
     """
     puzzle = int_to_bitwise(puzzle)
     solved_puzzle, rcells = solve_sudoku(puzzle, 1, verbose)
+    
     if rcells > 0:
-        print('Puzzle unsolved', rcells)
+        print('Puzzle unsolved')
         return None
-
+        
+    print('\nPuzzle solved')
     return bitwise_to_int(solved_puzzle)
 
 

@@ -30,16 +30,16 @@ def extract_puzzle(fname):
         return None
         
     cells = get_cell_contours(puzzle_border[0])
-    puzzle_array = np.zeros([9,9], dtype = int)
+    puzzle = [[0]*9 for _ in range(9)]
     
     for i in range(81):
         y1,x1, dy,dx = cv.boundingRect(cells[i])
         cell_image = 255 - thresh[x1:x1+dx,y1:y1+dy]
         cell_image= cv.copyMakeBorder(cell_image,10,10,10,10,cv.BORDER_CONSTANT,value=(255,255,255))
         cell_value = get_digit(cell_image)
-        puzzle_array[i//9,i%9]=cell_value
+        puzzle[i//9][i%9]=cell_value
 
-    return puzzle_array
+    return puzzle
 
 
 def get_cell_contours(border):
