@@ -32,7 +32,7 @@ def solve(puzzle, verbose=True):
         print('Puzzle unsolved')
         return None
         
-    print('\nPuzzle solved')
+    # print('\nPuzzle solved')
     return bitwise_to_int(solved_puzzle)
 
 
@@ -272,93 +272,39 @@ def find_hidden_singles(candidates) -> bool:
     
     for i in range(9):
         for j in range(9):
-            if candidates[i][j] > 1:
-                row_candidates = get_row_candidates(candidates, i, j)
-                row_cleaned_list = candidates[i][j] & (511-row_candidates)
+            if int.bit_count(candidates[i][j]) > 1:
+                candidate = candidates[i][j]
+                candidates[i][j] = 0
+                
+                row_candidates = candidates[i][0] | candidates[i][1] | candidates[i][2] | candidates[i][3] | candidates[i][4] | candidates[i][5] | candidates[i][6] | candidates[i][7] | candidates[i][8]
+                
+                row_cleaned_list = candidate & (511-row_candidates)
                 if row_cleaned_list in nums:
                     candidates[i][j] = row_cleaned_list
                     hs_availabe = True
                     continue
                 
-                col_candidates = get_col_candidates(candidates, i, j)
-                col_cleaned_list = candidates[i][j] & (511-col_candidates)
+                col_candidates = candidates[0][j] | candidates[1][j] | candidates[2][j] | candidates[3][j] | candidates[4][j] | candidates[5][j] | candidates[6][j] | candidates[7][j] | candidates[8][j]
+                
+                col_cleaned_list = candidate & (511-col_candidates)
                 if col_cleaned_list in nums:
                     candidates[i][j] = col_cleaned_list
                     hs_availabe = True
                     continue
                 
-                block_candidates = get_block_candidates(candidates, i, j)
-                block_cleaned_list = candidates[i][j] & (511-block_candidates)
+                ib, jb = (i//3)*3, (j//3)*3
+
+                block_candidates = candidates[ib][jb] | candidates[ib][jb+1] | candidates[ib][jb+2] | candidates[ib+1][jb] | candidates[ib+1][jb+1] | candidates[ib+1][jb+2] | candidates[ib+2][jb] | candidates[ib+2][jb+1] | candidates[ib+2][jb+2]
+            
+                block_cleaned_list = candidate & (511-block_candidates)
                 if block_cleaned_list in nums:
                     candidates[i][j] = block_cleaned_list
                     hs_availabe = True
+                    continue
+                
+                candidates[i][j] = candidate
 
     return hs_availabe
-
-
-def get_row_candidates(candidates, i, j):
-    """
-    Gets the list of all the other candidates in the row index-i except for the candidates in row index-i and column index-j.
-
-    Parameters:
-    - candidates: numpy.ndarray
-        A 9x9 numpy array, each element containing a list of the candidates for each empty cell.
-    - i,j : row index, column indices.
-
-    Returns:
-    - int: All the other candidates in the row index-i in bitwise representation
-    """
-
-    row_candidates = 0
-    for k in range(9):
-        if k == j: continue
-        row_candidates |= candidates[i][k]
-
-    return row_candidates
-
-
-def get_col_candidates(candidates, i, j) -> list:
-    """
-    Gets the list of all the other candidates in the column index-j except for the candidates in row index-i and column index-j.
-
-    Parameters:
-    - candidates: numpy.ndarray
-        A 9x9 numpy array, each element containing  the candidates for each empty cell.
-    - i,j : row index, column indices.
-
-    Returns:
-    - int: All the other candidates in the column index-j in bitwise representation
-    """
-
-    col_candidates = 0
-    for k in range(9):
-        if k == i: continue
-        col_candidates |= candidates[k][j]
-        
-    return col_candidates
-
-
-def get_block_candidates(candidates, i, j):
-    """
-    Gets the list of all the other candidates in the relevant 3x3 block except for the candidates in row index-i and column index-j.
-
-    Parameters:
-    - candidates: numpy.ndarray
-        A 9x9 numpy array, each element containing  the candidates for each empty cell.
-    - i,j : row index, column indices.
-
-    Returns:
-    - int: All the other candidates in the relevant block cell i,j belongs to.
-    """
-
-    block_candidates = 0
-    block_i, block_j = (i//3)*3, (j//3)*3
-    for k in range(block_i, block_i+3):
-        for l in range(block_j, block_j+3):
-            if k == i and l == j: continue
-            block_candidates |= candidates[k][l]
-            
-    return block_candidates
 
 
 def get_branching_position(candidates):
