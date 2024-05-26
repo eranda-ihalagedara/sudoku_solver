@@ -32,7 +32,7 @@ int main(){
     {0, 1, 0, 0, 3, 0, 0, 0, 0}};
 
   Solve(puzzle);
-
+  
   return 0;
 }
 
