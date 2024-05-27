@@ -36,7 +36,7 @@ void Solver::PrintPuzzle(int puzzle[][9]){
 }
 
 
-void Solver::Solve(int puzzle[][9]){
+void Solver::Solve(int puzzle[][9], bool verbose){
  
   IntToBitwise(puzzle);
 
@@ -50,21 +50,31 @@ void Solver::Solve(int puzzle[][9]){
     }
   }
 
-  SolveSudoku(puzzle, candidates, remaining_cells);
+  SolveSudoku(puzzle, candidates, remaining_cells, 1, verbose);
   if (remaining_cells>0){
     std::cout << "Puzzle unsolved";
     return;
   }
   
   BitwiseToInt(puzzle);
+  std::cout << "\n\nPuzzle solved:" << std::endl;
   PrintPuzzle(puzzle);
 }
 
-int Solver::SolveSudoku(int puzzle[][9],int candidates[][9], int& remaining_cells){
+int Solver::SolveSudoku(int puzzle[][9],int candidates[][9], int& remaining_cells, int level, bool verbose){
   int solved_cells = 0,remaining_cells_new  = remaining_cells;
+  int iteration = 1;
+
+  if (verbose) {
+    std::cout << '\n' + std::string(level-1, '\t') + "Level " + std::to_string(level) + ":" << std::endl;
+    std::cout << std::string(level, '\t') + "Iterations: ";
+  }
 
   while(true){
     if (remaining_cells_new == 0) return 0;
+
+    if (verbose) std::cout << iteration << " ";
+    iteration++;
     
     if (!FillCandidates(puzzle, candidates, remaining_cells))
       return remaining_cells;
@@ -96,7 +106,7 @@ int Solver::SolveSudoku(int puzzle[][9],int candidates[][9], int& remaining_cell
             UpdateCandidates(puzzle_copy, candidates_copy, i, j);
             reduced_cells = remaining_cells-1;
 
-            SolveSudoku(puzzle_copy, candidates_copy, reduced_cells);
+            SolveSudoku(puzzle_copy, candidates_copy, reduced_cells, level+1, verbose);
 
             if (reduced_cells == 0){
               remaining_cells = 0;
@@ -105,6 +115,14 @@ int Solver::SolveSudoku(int puzzle[][9],int candidates[][9], int& remaining_cell
               }
         }
       }
+  }
+
+  if (verbose) {
+    if (remaining_cells == 0 && level == 1){
+      std::cout << "\nPuzzle solved" << std::endl;
+    } else if (remaining_cells != 0){
+      std::cout << "\n" << std::string(level-1, '\t') << "Dead end" << std::endl;
+    }
   }
   
   return remaining_cells;

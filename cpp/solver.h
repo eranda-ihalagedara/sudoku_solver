@@ -10,14 +10,14 @@ class Solver {
     public:
         Solver()=default;
         ~Solver(){};
-        void Solve(int puzzle[][9]);
+        void Solve(int puzzle[][9], bool verbose = true);
         void IntToBitwise(int puzzle[][9]);
 
     protected:
         // void IntToBitwise(int puzzle[][9]);
         void BitwiseToInt(int puzzle[][9]);
         void PrintPuzzle(int puzzle[][9]);
-        int SolveSudoku(int puzzle[][9],int candidates[][9], int& remaining_cells);
+        int SolveSudoku(int puzzle[][9],int candidates[][9], int& remaining_cells, int level=1, bool verbose = true);
         void getCandidates(int puzzle[][9], int candidates[][9]);
         bool FillCandidates(int puzzle[][9], int candidates[][9], int& remaining_cells);
         void UpdateCandidates(int puzzle[][9], int candidates[][9], int r, int c);
