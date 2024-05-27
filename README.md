@@ -9,6 +9,8 @@ Eg:
      alt="Sudoku Puzzle"
      height="300px" />  
 
+
+### Python
 Above puzzle should be input as a 9x9 list:
 ```
 puzzle = [  
@@ -43,6 +45,35 @@ Level 1:
 				Iterations: 1 2 3 4 5 6 7 8 9 
 Puzzle solved
 ```
+
+### C++
+
+The puzzle should be a 9x9 int array.
+
+Include the `solver.h` library and use `.Solve(puzzle)` to initiate solving.
+
+```
+#include "solver.h"
+
+int main(){
+    Solver s;
+    int puzzle[][9] = 
+    { {0, 0, 0, 0, 0, 0, 0, 8, 4},
+        {0, 0, 0, 1, 0, 0, 0, 0, 0},
+        {2, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 6, 0, 0, 1, 3, 0},
+        {4, 0, 8, 0, 0, 0, 0, 0, 0},
+        {0, 5, 0, 0, 0, 0, 0, 0, 0},
+        {5, 6, 0, 0, 0, 0, 2, 0, 0},
+        {0, 0, 0, 0, 8, 0, 0, 0, 7},
+        {0, 1, 0, 0, 3, 0, 0, 0, 0}};
+    s.Solve(puzzle);
+    
+    return 0;
+}
+```
+
+
 
 ### Puzzle Extractor
 You can use puzzle extractor to load an image of a sudoku puzzle and extract it into a numpy list
