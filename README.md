@@ -30,7 +30,7 @@ Import the module and use `.solve(puzzle)` to initiate solving.
 ```
 import sudoku_solver as sk  
 
-solved_puzzle = sk.solve_sudoku(puzzle)
+solved_puzzle = sk.solve(puzzle)
 ```
 It returns the solved puzzle if the puzzle is solved. Otherwise None.  
 There will be an output to the console that indicates level of recursion and iterations in each level.  
@@ -73,7 +73,29 @@ int main(){
 }
 ```
 
+### REST API
+Sodoku solver is deployed as a AWS REST API which can be accessed with a key. The puzzled is passed as a string and the response will be retruned as a `json` with status code and the solution (as a string).
 
+Using Python `requests` library to access the API:
+
+```
+import requests
+url = 'https://668mu9dkre.execute-api.us-east-1.amazonaws.com/dev'
+api_key = '********'
+
+headers = { "x-api-key": api_key}
+payload = { "puzzle_str": "000000010400000000020000000000050407008000300001090000300400200050100000000806000"}
+
+response = requests.post(url=url, headers=headers, json=payload)
+json.loads(response.content)
+```
+Output:
+```
+{
+    'statusCode': 200,
+    'solution': '693784512487512936125963874932651487568247391741398625319475268856129743274836159'
+}
+```
 
 ### Puzzle Extractor
 You can use puzzle extractor to load an image of a sudoku puzzle and extract it into a numpy list
@@ -83,6 +105,8 @@ import puzzle_extractor as pe
 puzzle = pe.extract_puzzle('img/puzzle2.PNG')
 ```
 **Note**: This uses opencv and pytesseract to process the image. Hence need to install libraries in the `requirements.txt` file. Depending on the image condition extracted puzzle may not be accurate. In that case you may need to  edit the `numpy` array.
+
+
 
 ## References
 
